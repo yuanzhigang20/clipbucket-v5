@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: http://162.35.166.53/sitemap.php

@@ -20,6 +20,38 @@
 {ANCHOR place="after_cookie_banner"}
 {/if}
 
+
+<div class="oc-compliance-footer">
+  <div class="links">
+    <a href="/about.php">About</a>
+    <a href="/terms.php">Terms</a>
+    <a href="/privacy.php">Privacy Policy</a>
+    <a href="/dmca.php">DMCA / Copyright</a>
+    <a href="/contact.php">Contact</a>
+    <a href="/notice-18-plus.php">18+ Notice</a>
+    <a href="/content-removal.php">Content Removal</a>
+    <a href="/report-abuse.php">Report Abuse</a>
+    <a href="/consent-policy.php">Consent / Performer Policy</a>
+  </div>
+  <div>18+ only. This site is a legal video portal framework. Users must comply with applicable law, copyright rules, consent requirements, and platform policies.</div>
+</div>
+
+<div id="oc-age-gate" class="oc-age-gate" role="dialog" aria-modal="true" aria-labelledby="oc-age-gate-title">
+  <div class="oc-age-gate__dialog">
+    <h2 id="oc-age-gate-title">18+ Age Verification</h2>
+    <p>This website contains age-restricted content. You must be 18 years or older to enter.</p>
+    <div class="oc-age-gate__actions">
+      <button type="button" class="oc-age-gate__enter" id="oc-age-gate-enter">I am 18 or older</button>
+      <a class="oc-age-gate__exit" href="https://www.google.com/">Exit</a>
+    </div>
+  </div>
+</div>
+{literal}
+<script>
+(function(){var key='oc_age_verified_v1';var gate=document.getElementById('oc-age-gate');var enter=document.getElementById('oc-age-gate-enter');try{if(localStorage.getItem(key)!=='yes'&&gate){gate.classList.add('is-visible')}if(enter){enter.addEventListener('click',function(){localStorage.setItem(key,'yes');gate.classList.remove('is-visible')})}}catch(e){if(gate)gate.classList.add('is-visible');if(enter)enter.addEventListener('click',function(){gate.classList.remove('is-visible')})}})();
+</script>
+{/literal}
+
 {ANCHOR place="before_footer"}
 <footer id="footer" class="clearfix">
     <div class="container">
