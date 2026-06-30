@@ -2,6 +2,12 @@
 const THIS_PAGE = 'all_videos';
 require_once dirname(__FILE__, 2) . '/includes/admin_config.php';
 User::getInstance()->hasPermissionOrRedirect('video_moderation', true);
+pages::getInstance()->page_redir();
+
+/* Generating breadcrumb */
+global $breadcrumb;
+$breadcrumb[0] = ['title' => 'Videos', 'url' => ''];
+$breadcrumb[1] = ['title' => 'All Videos', 'url' => DirPath::getUrl('admin_area') . 'all_videos.php'];
 
 function av_h($s): string { return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 function av_db(): mysqli {
