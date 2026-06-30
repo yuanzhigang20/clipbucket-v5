@@ -5,18 +5,20 @@ User::getInstance()->hasPermissionOrRedirect('video_moderation', true);
 
 function av_h($s): string { return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 function av_db(): mysqli {
-    static $db = null;
-    if ($db) return $db;
-    if (defined('DBHOST')) {
-        $db = new mysqli(DBHOST, DBUSER, DBPASS, DBNAME);
+    static $conn = null;
+    if ($conn instanceof mysqli) return $conn;
+    // Prefer ClipBucket's already-configured database constants. Do not rely on web-server env vars.
+    if (defined('DBHOST') && defined('DBUSER') && defined('DBPASS') && defined('DBNAME')) {
+        $conn = new mysqli(DBHOST, DBUSER, DBPASS, DBNAME);
     } else {
-        global $db;
-        if ($db instanceof mysqli) return $db;
-        $db = new mysqli('localhost', getenv('MYSQL_USER') ?: 'clipbucket', getenv('MYSQL_PASSWORD') ?: '', getenv('MYSQL_DATABASE') ?: 'clipbucket');
+        $conn = new mysqli('127.0.0.1', 'clipbucket', getenv('MYSQL_PASSWORD') ?: '', 'clipbucket', 3306);
     }
-    if ($db->connect_errno) die('Database connection failed');
-    $db->set_charset('utf8mb4');
-    return $db;
+    if ($conn->connect_errno) {
+        http_response_code(500);
+        die('Database connection failed');
+    }
+    $conn->set_charset('utf8mb4');
+    return $conn;
 }
 function av_param(string $k, string $default=''): string { return trim((string)($_GET[$k] ?? $default)); }
 function av_count(string $sql): int { $r=av_db()->query($sql); if(!$r) return 0; $row=$r->fetch_row(); return (int)($row[0] ?? 0); }
