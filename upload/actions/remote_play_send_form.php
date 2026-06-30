@@ -6,12 +6,7 @@ if (!Update::IsCurrentDBVersionIsHigherOrEqualTo('5.5.3', '14')) {
     sessionMessageHandler::add_message('Sorry, you cannot upload new videos until the application has been fully updated by an administrator', 'e', User::getInstance()->getDefaultHomepageFromUserLevel());
 }
 
-if( !User::getInstance()->hasPermission('allow_video_upload') ){
-    echo json_encode(['error'=>lang('insufficient_privileges')]);
-    die();
-}
-
-if( empty(Upload::getInstance()->get_upload_options()) ) {
+if( config('enable_video_remote_play') != 'yes' ) {
     echo json_encode(['error'=>lang('video_upload_disabled')]);
     die();
 }
@@ -30,79 +25,23 @@ if( !empty($_POST['form_data']) ){
 
 $video_url = $_POST['remote_play_url'] = $_POST['remote_play_file_url'];
 unset($_POST['remote_play_file_url']);
-if (filter_var($video_url, FILTER_VALIDATE_URL) === FALSE) {
-    echo json_encode(['error' => lang('remote_play_invalid_url')]);
-    die();
-}
 
-$parts = parse_url($video_url);
-if (!$parts || empty($parts['host'])) {
-    echo json_encode(['error' => lang('remote_play_invalid_url')]);
-    die();
-}
-
-$host = $parts['host'];
-$ipv4 = gethostbyname($host);
-if (!filter_var(
-    $ipv4,
-    FILTER_VALIDATE_IP,
-    FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
-)) {
-    echo json_encode(['error' => lang('remote_play_invalid_url')]);
-    die();
-}
-
-$records = dns_get_record($host, DNS_A + DNS_AAAA);
-foreach ($records as $record) {
-    if (isset($record['ip']) && !filter_var($record['ip'], FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
-        echo json_encode(['error' => lang('remote_play_invalid_url')]);
-        die();
-    }
-}
-
-$extension = strtolower(getExt($video_url));
-$allowed_extensions = ['mp4','m3u8'];
-if( !in_array($extension, $allowed_extensions) ){
-    echo json_encode(['error'=>lang('remote_play_invalid_extension')]);
-    die();
-}
-
-$check_url = get_headers($video_url);
-if( !isset($check_url[0]) ){
-    echo json_encode(['error'=>lang('remote_play_website_not_responding')]);
-    die();
-}
-
-if(!str_contains($check_url[0], '200')){
-    echo json_encode(['error'=>lang('remote_play_url_not_working')]);
+$validation_error = null;
+if( !remote_play::validateRemoteVideoUrl($video_url, true, $validation_error) ){
+    echo json_encode(['error' => $validation_error]);
     die();
 }
 
 switch($step){
     case 'save':
     case 'check_link':
-        require_once DirPath::get('classes') . 'sLog.php';
-        $log = new SLog();
-        $ffmpeg = new FFMpeg($log);
-        $video_infos = $ffmpeg->get_file_info($video_url);
-
-        if( empty($video_infos['format']) ){
-            $not_valid_format = lang('remote_play_not_valid_video');
-            if ($step == 'check_link') {
-                echo json_encode(['error'=>$not_valid_format]);
-                die();
-            } else {
-                e($not_valid_format);
-            }
-        }
-
         if( $step == 'check_link' ){
             echo json_encode(['filename'=>GetName($video_url)]);
             die();
         }
 
         $_POST['file_name'] = time() . RandomString(5);
-        $video_id = Upload::getInstance()->submit_upload();
+        $video_id = Upload::getInstance()->submit_upload(null, ['skip_upload_permission' => true]);
 
         $errors = errorhandler::getInstance()->get_error();
         if (empty($errors)) {

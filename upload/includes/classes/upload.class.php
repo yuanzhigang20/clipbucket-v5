@@ -67,11 +67,13 @@ class Upload
     /**
      * @throws Exception
      */
-    function submit_upload($array = null)
+    function submit_upload($array = null, array $options = [])
     {
         if (!$array) {
             $array = $_POST;
         }
+
+        $skip_upload_permission = $options['skip_upload_permission'] ?? false;
 
         $this->validate_video_upload_form($array, true);
 
@@ -82,13 +84,13 @@ class Upload
 
         $userid = user_id();
         if (!$userid) {
-            if (User::getInstance()->hasPermission('allow_video_upload')) {
+            if (User::getInstance()->hasPermission('allow_video_upload') || $skip_upload_permission) {
                 $userid = userquery::getInstance()->get_anonymous_user();
             } else {
                 e(lang('you_not_logged_in'));
                 return false;
             }
-        } else if (!User::getInstance()->hasPermission('allow_video_upload')) {
+        } else if (!User::getInstance()->hasPermission('allow_video_upload') && !$skip_upload_permission) {
             e(lang('insufficient_privileges'));
             return false;
         }
