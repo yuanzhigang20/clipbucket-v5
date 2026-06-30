@@ -41,7 +41,7 @@ Actions:
 Queue guardrails:
 - only `authorized_download=1` can queue
 - `rejected`, `broken`, `removed` cannot queue
-- `source_license` or `review_note` is required before queueing
+- `source_license` and `review_note` are optional; queueing is gated by `authorized_download=1`.
 
 ## Worker
 Worker: `custom/external_videos/workers/external_download_worker.php`
