@@ -90,3 +90,19 @@ Cron rollback:
 ```bash
 crontab -l | grep -v 'external_download_worker.php' | crontab -
 ```
+
+## Detail-page direct download discovery update
+
+Migration: `custom/external_videos/migrations/003_download_url.sql`
+
+Adds:
+- `cb_external_videos.download_url`
+
+Worker behavior after this update:
+- For authorized queued rows, if `download_url` is filled, validate it as a direct video file URL.
+- If `download_url` is empty, fetch the public detail/source page and inspect only ordinary `<a href="...">` links that look like download links.
+- Accept only direct `http/https` URLs ending in/serving `mp4`, `webm`, `mov`, or `mkv`.
+- Reject and log `m3u8`/HLS playlists, encrypted API responses, button-only JavaScript handlers, HTML pages, VIP/login-only flows, and any non-direct link.
+- This does not click browser buttons, decrypt app payloads, parse HLS segments, or bypass login/VIP/paywall/hotlink/DRM protections.
+
+Admin review page now exposes optional `download_url` for manually supplied direct-file URLs. The global gate still applies: only `authorized_download=1` plus queued rows are processed.
