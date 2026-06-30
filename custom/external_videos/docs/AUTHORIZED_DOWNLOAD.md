@@ -113,3 +113,18 @@ Admin review page now exposes optional `download_url` for manually supplied dire
 Migration: `custom/external_videos/migrations/004_authorized_default_true.sql`
 
 New external-video records now default to `authorized_download=1`. This does not auto-download by itself; rows still require `download_status=queued` before the Worker runs.
+
+## Public HLS/m3u8 ingest update
+
+Worker now accepts public unencrypted HLS `.m3u8` URLs in `download_url` or discovered in public detail-page HTML/resource text.
+
+Safety rules remain:
+- only `http/https`
+- manifest must be publicly fetchable
+- manifest must contain `#EXTM3U`
+- encrypted HLS (`#EXT-X-KEY` with non-`NONE` method) is refused
+- no login/VIP/paywall/DRM/hotlink bypass
+- no API payload decryption or browser click simulation
+- ffmpeg remuxes public HLS to mp4 under `/var/media_import_queue`, then imports via ClipBucket `Upload::submit_upload()` and `VideoConversionQueue::insert()`
+
+Verified on 2026-06-30: external video ID 14 used public unencrypted HLS manifest, downloaded/remuxed to MP4 (~88 MB), and imported into ClipBucket native video ID 2 with status `Waiting` for normal conversion queue processing.

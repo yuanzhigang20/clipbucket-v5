@@ -17,7 +17,7 @@ $importOnly = array_key_exists('import-only', $opts);
 $keepTemp = array_key_exists('keep-temp', $opts);
 $dryRun = array_key_exists('dry-run', $opts);
 $queueDir = getenv('EXTERNAL_VIDEO_QUEUE_DIR') ?: '/var/media_import_queue';
-$allowedExt = ['mp4','webm','mov','mkv'];
+$allowedExt = ['mp4','webm','mov','mkv','m3u8'];
 $blockedExt = ['php','phtml','phar','html','htm','js','sh','pl','py','cgi','exe','bin'];
 
 function evw_db(): mysqli { return ev_db(); }
@@ -42,7 +42,6 @@ function evw_allowed_download_url(string $url, array $allowedExt, array $blocked
     if (!in_array($scheme, ['http','https'], true)) return [false, 'Unsafe download URL protocol'];
     $path = parse_url($url, PHP_URL_PATH) ?: '';
     $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-    if ($ext === 'm3u8') return [false, 'HLS/m3u8 playlists are not accepted as direct download files'];
     if (in_array($ext, $blockedExt, true)) return [false, 'Blocked file extension in download URL: '.$ext];
     if (!in_array($ext, $allowedExt, true)) return [false, 'Download URL is not an allowed direct video file: '.($ext ?: 'no extension')];
     return [true, $ext];
@@ -78,7 +77,7 @@ function evw_discover_download_url(array $v, array $allowedExt, array $blockedEx
             $href = evw_absolute_url($detail, $m[1]);
             $text = trim(strip_tags($m[2]));
             if ($href === '') continue;
-            $looksDownload = preg_match('~下载|download|\.mp4(?:\?|$)|\.webm(?:\?|$)|\.mov(?:\?|$)|\.mkv(?:\?|$)~i', $text.' '.$href);
+            $looksDownload = preg_match('~下载|download|\.mp4(?:\?|$)|\.webm(?:\?|$)|\.mov(?:\?|$)|\.mkv(?:\?|$)|\.m3u8(?:\?|$)~i', $text.' '.$href);
             if (!$looksDownload) continue;
             [$ok, $reason] = evw_allowed_download_url($href, $allowedExt, $blockedExt);
             if ($ok) $candidates[] = [$href, $text ?: 'direct video link'];
@@ -86,8 +85,14 @@ function evw_discover_download_url(array $v, array $allowedExt, array $blockedEx
         }
     }
     if (!$candidates) {
-        if (preg_match('~\.m3u8(?:\?|["\']|$)~i', $html)) return [false, '', 'Detail page exposes HLS/m3u8 playback, not an allowed direct video download file'];
-        return [false, '', 'No public direct mp4/webm/mov/mkv download link found on detail page'];
+        if (preg_match('~https?://[^\"\'\s<>]+\.m3u8(?:\?[^\"\'\s<>]*)?~i', $html, $hm)) {
+            $hls = html_entity_decode($hm[0], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            [$ok, $reason] = evw_allowed_download_url($hls, $allowedExt, $blockedExt);
+            if ($ok) { $candidates[] = [$hls, 'public HLS manifest URL in detail page']; }
+            else { return [false, '', $reason]; }
+        } else {
+            return [false, '', 'No public direct mp4/webm/mov/mkv/m3u8 download link found on detail page'];
+        }
     }
     $url = $candidates[0][0];
     $st = evw_db()->prepare('UPDATE cb_external_videos SET download_url=?, updated_at=NOW() WHERE id=?');
@@ -95,6 +100,39 @@ function evw_discover_download_url(array $v, array $allowedExt, array $blockedEx
     $st->execute();
     return [true, $url, 'discovered from detail page: '.$candidates[0][1]];
 }
+
+function evw_validate_hls_manifest(string $url, int $id): array {
+    if (!ev_safe_url($url)) return [false, 'Invalid HLS URL'];
+    $cmd = 'curl --fail --location --proto =http,https --max-redirs 3 --connect-timeout 15 --max-time 30 --range 0-1048576 --silent --show-error '.escapeshellarg($url).' 2>&1';
+    exec($cmd, $out, $code);
+    if ($code !== 0) return [false, 'Unable to fetch HLS manifest'];
+    $manifest = implode("\n", $out);
+    if (!str_contains($manifest, '#EXTM3U')) return [false, 'HLS URL did not return an m3u8 manifest'];
+    if (preg_match('~#EXT-X-KEY\s*:\s*METHOD=(?!NONE)~i', $manifest)) return [false, 'Encrypted HLS manifests are not accepted'];
+    if (preg_match('~URI=["\']?([^"\',\s]+)~i', $manifest, $m) && !str_starts_with($m[1], 'data:')) {
+        evw_log($id, 'warning', 'HLS manifest references a key or external URI; refusing unless METHOD=NONE');
+    }
+    return [true, 'public unencrypted HLS manifest'];
+}
+function evw_download_hls_to_mp4(array $v, string $downloadUrl, string $queueDir, bool $dryRun=false): ?array {
+    $id=(int)$v['id'];
+    [$ok,$reason] = evw_validate_hls_manifest($downloadUrl, $id);
+    if (!$ok) { evw_fail($v, $reason); return null; }
+    if ($dryRun) return ['path'=>$queueDir.'/dry-run.mp4','ext'=>'mp4'];
+    $final = $queueDir.'/'.evw_slug_file($v['slug'], $id, 'mp4');
+    $tmp = $queueDir.'/.'.$id.'-'.bin2hex(random_bytes(4)).'.mp4';
+    $referer = (string)($v['source_url'] ?? '');
+    $cmd = 'ffmpeg -hide_banner -nostdin -y -protocol_whitelist file,http,https,tcp,tls,crypto -allowed_extensions ALL -headers '.escapeshellarg('Referer: '.$referer."\r\n").' -i '.escapeshellarg($downloadUrl).' -map 0:v:0? -map 0:a:0? -c copy -movflags +faststart -t 00:30:00 '.escapeshellarg($tmp).' 2>&1';
+    exec($cmd, $out, $code);
+    if ($code !== 0 || !is_file($tmp) || filesize($tmp) < 1024) { @unlink($tmp); evw_fail($v, 'FFmpeg HLS ingest failed'); evw_log($id, 'error', 'FFmpeg HLS ingest failed', ['tail'=>implode("\n", array_slice($out, -12))]); return null; }
+    rename($tmp, $final);
+    chmod($final, 0640);
+    $st=evw_db()->prepare("UPDATE cb_external_videos SET download_status='downloaded', local_file_path=?, download_url=?, download_error=NULL, updated_at=NOW() WHERE id=?");
+    $st->bind_param('ssi',$final,$downloadUrl,$id); $st->execute();
+    evw_log($id, 'info', 'Downloaded HLS stream to MP4', ['path'=>$final, 'bytes'=>filesize($final)]);
+    return ['path'=>$final,'ext'=>'mp4'];
+}
+
 function evw_slug_file(string $slug, int $id, string $ext): string {
     $base = preg_replace('/[^a-zA-Z0-9_-]+/', '-', $slug ?: ('external-'.$id));
     $base = trim($base, '-') ?: ('external-'.$id);
@@ -105,7 +143,6 @@ function evw_probe_ext(string $path, string $fallbackUrl, array $allowedExt, arr
     $fileOut = trim((string)shell_exec('file -b --mime-type '.escapeshellarg($path).' 2>/dev/null'));
     $map = ['video/mp4'=>'mp4','video/webm'=>'webm','video/quicktime'=>'mov','video/x-matroska'=>'mkv','application/octet-stream'=>''];
     if (isset($map[$fileOut]) && $map[$fileOut] !== '') { $ext = $map[$fileOut]; }
-    if ($ext === 'm3u8') return [false, $ext, 'HLS/m3u8 playlists are not accepted as direct download files'];
     if (in_array($ext, $blockedExt, true)) return [false, $ext, 'Blocked file extension: '.$ext];
     if (!in_array($ext, $allowedExt, true)) return [false, $ext, 'Unsupported or unsafe video type: '.($ext ?: $fileOut ?: 'unknown')];
     return [true, $ext, $fileOut];
@@ -117,6 +154,8 @@ function evw_download(array $v, string $queueDir, array $allowedExt, array $bloc
     if (!is_dir($queueDir) && !$dryRun) { mkdir($queueDir, 0750, true); }
     if (!is_writable($queueDir) && !$dryRun) { evw_fail($v, 'Queue directory is not writable: '.$queueDir); return null; }
     evw_log($id, 'info', 'Starting authorized direct-file download', ['download_url'=>$downloadUrl, 'source'=>$why]);
+    $downloadExt = strtolower(pathinfo(parse_url($downloadUrl, PHP_URL_PATH) ?: '', PATHINFO_EXTENSION));
+    if ($downloadExt === 'm3u8') { return evw_download_hls_to_mp4($v, $downloadUrl, $queueDir, $dryRun); }
     if ($dryRun) return ['path'=>$queueDir.'/dry-run.mp4','ext'=>'mp4'];
     $tmp = $queueDir.'/.'.$id.'-'.bin2hex(random_bytes(4)).'.download';
     $referer = (string)($v['source_url'] ?? '');
@@ -135,6 +174,8 @@ function evw_download(array $v, string $queueDir, array $allowedExt, array $bloc
 }
 function evw_import_to_clipbucket(array $v, bool $keepTemp=false, bool $dryRun=false): bool {
     $id=(int)$v['id']; $path=(string)$v['local_file_path'];
+    if (!user_id()) { @userquery::getInstance()->login_as_user(1); }
+    if (!user_id()) { evw_fail($v, 'Unable to initialize ClipBucket admin upload context'); return false; }
     if (!$path || !is_file($path)) { evw_fail($v, 'Downloaded file missing for import'); return false; }
     evw_log($id, 'info', 'Importing through ClipBucket upload/conversion queue');
     if ($dryRun) return true;
@@ -147,7 +188,13 @@ function evw_import_to_clipbucket(array $v, bool $keepTemp=false, bool $dryRun=f
         'title' => $v['title'],
         'description' => $v['description'] ?: ('Imported from authorized source: '.$v['provider']),
         'tags' => $v['tags'] ?: 'external, imported',
-        'category' => $category,
+        'tags_video' => $v['tags'] ?: 'external, imported',
+        'tags_genre' => '',
+        'tags_actors' => '',
+        'tags_producer' => '',
+        'tags_director' => '',
+        'tags_crew' => '',
+        'category' => $category ?: [1],
         'file_name' => $fileKey,
         'file_type' => $ext,
         'file_directory' => $fileDirectory,
@@ -156,10 +203,17 @@ function evw_import_to_clipbucket(array $v, bool $keepTemp=false, bool $dryRun=f
         'comment_voting' => 'yes',
         'allow_rating' => 'yes',
         'allow_embedding' => 'yes',
-        'broadcast' => 'public'
+        'broadcast' => 'public',
+        'age_restriction' => 18,
+        'video_password' => '',
+        'country' => '',
+        'location' => '',
+        'external_rate' => 0,
+        'external_ratings' => 0,
+        'tracks' => []
     ];
     $vid = Upload::getInstance()->submit_upload($array);
-    if (!$vid || error()) { evw_fail($v, 'ClipBucket submit_upload failed'); return false; }
+    if (!$vid || error()) { evw_fail($v, 'ClipBucket submit_upload failed: '.strip_tags(json_encode(error()))); return false; }
     $tempFile = DirPath::get('temp') . $fileKey . '.' . $ext;
     if (!copy($path, $tempFile)) { evw_fail($v, 'Failed to copy file into ClipBucket temp queue'); return false; }
     create_dated_folder(DirPath::get('logs'));
