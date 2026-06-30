@@ -7,7 +7,7 @@ Adds an authorization-gated path from external embed metadata to ClipBucket-host
 
 Default behavior remains metadata-only:
 - crawler/import creates `status=pending`
-- `authorized_download=false`
+- `authorized_download=true` by current operator policy
 - `download_status=none`
 - no automatic downloads
 
@@ -106,3 +106,10 @@ Worker behavior after this update:
 - This does not click browser buttons, decrypt app payloads, parse HLS segments, or bypass login/VIP/paywall/hotlink/DRM protections.
 
 Admin review page now exposes optional `download_url` for manually supplied direct-file URLs. The global gate still applies: only `authorized_download=1` plus queued rows are processed.
+
+
+## Default authorization policy update
+
+Migration: `custom/external_videos/migrations/004_authorized_default_true.sql`
+
+New external-video records now default to `authorized_download=1`. This does not auto-download by itself; rows still require `download_status=queued` before the Worker runs.
