@@ -1,5 +1,5 @@
 <?php
-const THIS_PAGE = 'all_videos';
+const THIS_PAGE = 'video_manager';
 require_once dirname(__FILE__, 2) . '/includes/admin_config.php';
 User::getInstance()->hasPermissionOrRedirect('video_moderation', true);
 pages::getInstance()->page_redir();
