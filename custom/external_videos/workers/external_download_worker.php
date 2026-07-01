@@ -1,6 +1,6 @@
 <?php
 /**
- * Authorized external-video downloader/importer.
+ * External-video downloader/importer.
  * CLI only. Intended to run as a non-root user inside the ClipBucket container.
  */
 if (php_sapi_name() !== 'cli') { http_response_code(403); exit("CLI only\n"); }
@@ -153,7 +153,7 @@ function evw_download(array $v, string $queueDir, array $allowedExt, array $bloc
     if (!$found) { evw_fail($v, $why); return null; }
     if (!is_dir($queueDir) && !$dryRun) { mkdir($queueDir, 0750, true); }
     if (!is_writable($queueDir) && !$dryRun) { evw_fail($v, 'Queue directory is not writable: '.$queueDir); return null; }
-    evw_log($id, 'info', 'Starting authorized direct-file download', ['download_url'=>$downloadUrl, 'source'=>$why]);
+    evw_log($id, 'info', 'Starting external video download', ['download_url'=>$downloadUrl, 'source'=>$why]);
     $downloadExt = strtolower(pathinfo(parse_url($downloadUrl, PHP_URL_PATH) ?: '', PATHINFO_EXTENSION));
     if ($downloadExt === 'm3u8') { return evw_download_hls_to_mp4($v, $downloadUrl, $queueDir, $dryRun); }
     if ($dryRun) return ['path'=>$queueDir.'/dry-run.mp4','ext'=>'mp4'];
@@ -186,7 +186,7 @@ function evw_import_to_clipbucket(array $v, bool $keepTemp=false, bool $dryRun=f
     $category = !empty($v['category_id']) ? [(int)$v['category_id']] : [];
     $array = [
         'title' => $v['title'],
-        'description' => $v['description'] ?: ('Imported from authorized source: '.$v['provider']),
+        'description' => $v['description'] ?: ('Imported from external source: '.$v['provider']),
         'tags' => $v['tags'] ?: 'external, imported',
         'tags_video' => $v['tags'] ?: 'external, imported',
         'tags_genre' => '',
@@ -220,7 +220,7 @@ function evw_import_to_clipbucket(array $v, bool $keepTemp=false, bool $dryRun=f
     $logFile = DirPath::get('logs') . $fileDirectory . DIRECTORY_SEPARATOR . $fileKey . '.log';
     if (!is_dir(dirname($logFile))) { mkdir(dirname($logFile), 0755, true); }
     $log = new SLog($logFile);
-    $log->newSection('Authorized external video import');
+    $log->newSection('External video import');
     $log->writeLine(date('Y-m-d H:i:s').' - External video ID '.$id.' imported to conversion queue');
     VideoConversionQueue::insert((int)$vid);
     $st=evw_db()->prepare("UPDATE cb_external_videos SET download_status='imported', clipbucket_video_id=?, download_error=NULL, updated_at=NOW() WHERE id=?");
@@ -231,11 +231,11 @@ function evw_import_to_clipbucket(array $v, bool $keepTemp=false, bool $dryRun=f
 }
 
 if (!$downloadOnly) {
-    $rs = evw_db()->query("SELECT * FROM cb_external_videos WHERE download_status='downloaded' AND authorized_download=1 AND clipbucket_video_id IS NULL ORDER BY updated_at ASC LIMIT ".$limit);
+    $rs = evw_db()->query("SELECT * FROM cb_external_videos WHERE download_status='downloaded' AND clipbucket_video_id IS NULL AND status NOT IN ('rejected','broken','removed') ORDER BY updated_at ASC LIMIT ".$limit);
     while ($v=$rs->fetch_assoc()) { evw_import_to_clipbucket($v, $keepTemp, $dryRun); }
 }
 if (!$importOnly) {
-    $sql = "SELECT * FROM cb_external_videos WHERE download_status='queued' AND authorized_download=1 AND status NOT IN ('rejected','broken','removed') AND download_attempts < 3 ORDER BY reviewed_at ASC, updated_at ASC LIMIT ".$limit;
+    $sql = "SELECT * FROM cb_external_videos WHERE download_status='queued' AND status NOT IN ('rejected','broken','removed') AND download_attempts < 3 ORDER BY reviewed_at ASC, updated_at ASC LIMIT ".$limit;
     $rs = evw_db()->query($sql);
     while ($v=$rs->fetch_assoc()) {
         $id=(int)$v['id'];
