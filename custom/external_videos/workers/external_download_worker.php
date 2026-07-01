@@ -17,6 +17,10 @@ $importOnly = array_key_exists('import-only', $opts);
 $keepTemp = array_key_exists('keep-temp', $opts);
 $dryRun = array_key_exists('dry-run', $opts);
 $queueDir = getenv('EXTERNAL_VIDEO_QUEUE_DIR') ?: '/var/media_import_queue';
+if (!is_dir($queueDir) && !$dryRun) { mkdir($queueDir, 0750, true); }
+$lockPath = rtrim($queueDir, '/').'/.external_download_worker.lock';
+$lockHandle = fopen($lockPath, 'c');
+if (!$lockHandle || !flock($lockHandle, LOCK_EX | LOCK_NB)) { echo '['.date('c')."] [info] Another external video worker is already running; exiting\n"; exit(0); }
 $allowedExt = ['mp4','webm','mov','mkv','m3u8'];
 $blockedExt = ['php','phtml','phar','html','htm','js','sh','pl','py','cgi','exe','bin'];
 
