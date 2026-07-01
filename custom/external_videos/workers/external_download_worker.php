@@ -18,9 +18,6 @@ $keepTemp = array_key_exists('keep-temp', $opts);
 $dryRun = array_key_exists('dry-run', $opts);
 $queueDir = getenv('EXTERNAL_VIDEO_QUEUE_DIR') ?: '/var/media_import_queue';
 if (!is_dir($queueDir) && !$dryRun) { mkdir($queueDir, 0750, true); }
-$lockPath = rtrim($queueDir, '/').'/.external_download_worker.lock';
-$lockHandle = fopen($lockPath, 'c');
-if (!$lockHandle || !flock($lockHandle, LOCK_EX | LOCK_NB)) { echo '['.date('c')."] [info] Another external video worker is already running; exiting\n"; exit(0); }
 $allowedExt = ['mp4','webm','mov','mkv','m3u8'];
 $blockedExt = ['php','phtml','phar','html','htm','js','sh','pl','py','cgi','exe','bin'];
 
@@ -244,6 +241,7 @@ if (!$importOnly) {
     while ($v=$rs->fetch_assoc()) {
         $id=(int)$v['id'];
         evw_db()->query("UPDATE cb_external_videos SET download_status='downloading', download_attempts=download_attempts+1, updated_at=NOW() WHERE id=".$id." AND download_status='queued'");
+        if (evw_db()->affected_rows < 1) { continue; }
         $fresh = ev_get($id); if (!$fresh || $fresh['download_status'] !== 'downloading') continue;
         $dl = evw_download($fresh, $queueDir, $allowedExt, $blockedExt, $dryRun);
         if ($dl && !$downloadOnly) { $fresh = ev_get($id); if ($fresh) evw_import_to_clipbucket($fresh, $keepTemp, $dryRun); }
