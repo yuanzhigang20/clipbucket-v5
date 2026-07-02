@@ -88,7 +88,7 @@
                         <div class="col btn-holder user_menu text-right">
                             {if count($types_list) > 0}
                                 <div class="search">
-                                    <form class="search-form" action="/external_feed.php">
+                                    <form class="search-form" action="/videos.php">
                                         <div class="cbsearchtype">
                                             <div class="search-drop">
                                                 <button id="searchTypes" tabindex="-1" data-toggle="dropdown" class="btn btn-default dropdown-toggle search-drop-btn" type="button">
@@ -104,109 +104,15 @@
                                                     {ANCHOR place="inside_search"}
                                                 </ul>
                                             </div>
-                                            <input type="text" class="form-control" name="q" placeholder="{lang code='search_keyword_feed'}" value="{if isset($smarty.get.q)}{$smarty.get.q|display_clean}{else}{'query'|get_form_val:true}{/if}" id="query"/>
+                                            <input type="text" class="form-control" name="query" placeholder="{lang code='search_keyword_feed'}" value="{'query'|get_form_val:true}" id="query"/>
                                             <input type="hidden" name="type" class="type" value="{$toSearch}" id="type" disabled="disabled"/>
                                             <button tabindex="-1" type="submit" name="cbsearch" id="cbsearch" class="btn btn-default btn-search icon-search"></button>
                                         </div>
                                     </form>
                                 </div>
                             {/if}
-                            <ul class="nav navbar-nav navbar-right right-menu">
-                                {if user_id()}
-                                    {if (isSectionEnabled('videos') && !empty(Upload::getInstance()->get_upload_options()) && User::getInstance()->hasPermission('allow_video_upload')) || (isSectionEnabled('photos') && config('enable_photo_file_upload') == 'yes' && User::getInstance()->hasPermission('allow_photo_upload'))}
-                                        <li class="dropdown upload_link">
-                                            <a class="dropdown-toggle btn-upload btn btn-default"
-                                                {if !Update::IsCurrentDBVersionIsHigherOrEqualTo('5.5.3', '14')}
-                                                    href="javascript:void(0);"
-                                                    class="disabled"
-                                                    disabled="disabled" title="{lang('cant_perform_action_until_app_fully_updated')}"
-                                                {else}
-                                                    href="{cblink name='upload'}"
-                                                    data-toggle="dropdown"
-                                                {/if}
-                                            >
-                                                <i class="icon-upload"></i><span>{lang code="upload"}</span><b class="icon-down-arrow"></b></a>
-                                            <ul role="menu" class="dropdown-menu">
-                                                {if User::getInstance()->hasPermission('allow_video_upload') && isSectionEnabled('videos') && !empty(Upload::getInstance()->get_upload_options())}
-                                                    <li class="up_vid">
-                                                        <a
-                                                            {if (!Update::IsCurrentDBVersionIsHigherOrEqualTo('5.5.3', '14'))}
-                                                                href="javascript:void(0);"
-                                                                class="disabled"
-                                                                disabled="disabled" title="Sorry, you cannot upload new videos until the application has been fully updated by an administrator"
-                                                            {else}
-                                                                href="{cblink name='upload'}"
-                                                            {/if}
-                                                        >
-                                                            {lang code="upload_video"}<i class="icon-video visible-xs"></i>
-                                                        </a>
-                                                    </li>
-                                                {/if}
-                                                {if User::getInstance()->hasPermission('allow_photo_upload') && isSectionEnabled('photos') && config('enable_photo_file_upload') == 'yes'}
-                                                    <li class="up_img">
-                                                        <a
-                                                            {if (!Update::IsCurrentDBVersionIsHigherOrEqualTo('5.5.3', '14'))}
-                                                                href="javascript:void(0);"
-                                                                class="disabled"
-                                                                disabled="disabled" title="Sorry, you cannot upload new videos until the application has been fully updated by an administrator"
-                                                            {else}
-                                                                href="{cblink name='photo_upload'}"
-                                                            {/if}
-                                                        >
-                                                            {lang code="upload_photo"}<i class="icon-photo visible-xs"></i>
-                                                        </a>
-                                                    </li>
-                                                {/if}
-                                                {ANCHOR place="inside_upload"}
-                                            </ul>
-                                        </li>
-                                    {/if}
+                            {* Public site: upload/login/admin user controls intentionally hidden. *}
 
-                                    {$total_notif = User::getInstance()->getNotificationInbox() + User::getInstance()->getNotificationContact()}
-                                    <li class="dropdown myaccount-dd">
-                                        <a href="javascript:void(0);" class="user-area dropdown-toggle" data-toggle="dropdown">
-                                            <img src="{userquery::getInstance()->getUserThumb('', '',user_id())}" class="no_select" width="35" height="35"/>
-                                            <span>{display_clean(User::getInstance()->get('username')|truncate:15)} {if $total_notif > 0 }&nbsp; <i class="glyphicon glyphicon-bell i-primary"></i>{/if}</span>
-                                        </a>
-                                        <ul class="dropdown-menu">
-                                            {if User::getInstance()->hasAdminAccess()}
-                                                <li><a href="{DirPath::getUrl('admin_area')}">{lang code="admin_area"}</a></li>
-                                            {/if}
-                                            <li><a href="{cblink name='my_account'}">{lang code="my_account"} {if $total_notif > 0 }&nbsp;<div class="pull-right"><i class="glyphicon glyphicon-bell i-primary"></i></div>{/if}</a></li>
-                                            {if isSectionEnabled('videos') && User::getInstance()->hasPermission('allow_video_upload')}
-                                                <li><a href="{cblink name='my_videos'}">{lang('manage_x', lang('videos')|lower)}</a></li>
-                                            {/if}
-                                            {if isSectionEnabled('photos') && User::getInstance()->hasPermission('allow_photo_upload')}
-                                                <li class="hidden-xs"><a href="{cblink name='my_photos'}">{lang('manage_x', lang('photos')|lower)}</a></li>
-                                            {/if}
-                                            {if isSectionEnabled('collections') && (isSectionEnabled('videos') || isSectionEnabled('photos')) && User::getInstance()->hasPermission('allow_create_collection')}
-                                                <li class="hidden-xs"><a href="{cblink name='manage_collections'}">{lang('manage_x', lang('collections')|lower)}</a></li>
-                                            {/if}
-                                            {if isSectionEnabled('playlists') && User::getInstance()->hasPermission('allow_create_playlist')}
-                                                <li><a href="{$baseurl}manage_playlists.php?user={display_clean(User::getInstance()->get('username'))}">{lang('manage_x', lang('playlists')|lower)}</a></li>
-                                            {/if}
-                                            {if isSectionEnabled('channels') && Update::IsCurrentDBVersionIsHigherOrEqualTo('5.5.1', '136') && User::getInstance()->get('is_channel_enable')}
-                                                <li><a href="{User::getInstance()->getLink('channel')}">{lang code="my_channel"}</a></li>
-                                            {/if}
-                                            {ANCHOR place="inside_user_menu"}
-                                            <li class="divider"></li>
-                                            <li><a href="{cblink name='logout'}">{lang code="logout"}</a></li>
-                                        </ul>
-                                    </li>
-                                {else}
-                                    {assign var=base_url_empty value=(empty(trim(config('base_url'))) || !filter_var(config('base_url'), FILTER_VALIDATE_URL))}
-                                    {if config('allow_registeration')}
-                                        <li class="navbar-sm-login-links" {if $base_url_empty}title="{lang('cant_perform_action_until_app_fully_updated')}{/if}">
-                                            <a class="btn btn-default btn-newacc {if $base_url_empty}disabled{/if}" href="{cblink name='signup'}">
-                                                {lang code='create_new_account'}</a>
-                                        </li>
-                                    {/if}
-                                    <li class="navbar-sm-login-links">
-                                        <a class="btn btn-default btn-login" href="{cblink name='signin'}">{lang code='login'}</a>
-                                    </li>
-
-                                {/if}
-                            </ul>
                         </div>
                     </div>
                 </div>
@@ -218,14 +124,14 @@
 
 <nav class="oc-portal-nav" aria-label="Primary video navigation">
   <a href="/">{lang code="oc_recommended"}</a>
-  <a href="/external_feed.php">{lang code="oc_all_videos"}</a>
+  <a href="/videos.php">{lang code="oc_all_videos"}</a>
   <a href="/videos.php?sort=most_recent">{lang code="oc_latest_videos"}</a>
   <a href="/videos.php?sort=most_viewed">{lang code="oc_most_viewed"}</a>
   <a href="/videos.php?sort=featured">{lang code="oc_trending"}</a>
   <a href="/videos.php">{lang code="oc_categories"}</a>
-  <a href="/external_feed.php?q=tags">{lang code="oc_tags"}</a>
-  <a href="/external_feed.php?q=long">{lang code="oc_long_videos"}</a>
-  <a href="/external_feed.php?q=hd">{lang code="oc_hd_videos"}</a>
+  <a href="/videos.php?query=tags">{lang code="oc_tags"}</a>
+  <a href="/videos.php?query=long">{lang code="oc_long_videos"}</a>
+  <a href="/videos.php?query=hd">{lang code="oc_hd_videos"}</a>
   <form class="oc-lang-switcher" method="get" action="">
     <label for="oc-lang-select">{lang code="oc_language"}</label>
     <select id="oc-lang-select" name="set_site_lang" onchange="this.form.submit()">

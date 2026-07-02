@@ -70,12 +70,12 @@
             </div>
 
             <div class="clearfix row">
+                {if config('videos_enable_fullwidth') == 'yes'}
+                    {$class = 'colcb-xs-1 colcb-768-3 colcb-992-4 colcb-1200-5 colcb-1600-6 colcb-1920-7 colcb-2560-10 colcb-3840-12 colcb-5120-14'}
+                {else}
+                    {$class = 'colcb-xs-1 colcb-768-3 colcb-992-4 colcb-1200-5'}
+                {/if}
                 {if $videos}
-                    {if config('videos_enable_fullwidth') == 'yes'}
-                        {$class = 'colcb-xs-1 colcb-768-3 colcb-992-4 colcb-1200-5 colcb-1600-6 colcb-1920-7 colcb-2560-10 colcb-3840-12 colcb-5120-14'}
-                    {else}
-                        {$class = 'colcb-xs-1 colcb-768-3 colcb-992-4 colcb-1200-5'}
-                    {/if}
                     {foreach $videos as $video}
                         <div class="item-video {$class}" data-id="{$video.videoid}">
                             {if config('videos_video_style') == 'modern'}
@@ -85,7 +85,24 @@
                             {/if}
                         </div>
                     {/foreach}
-                {else}
+                {/if}
+                {if $external_videos}
+                    {foreach $external_videos as $v}
+                        <div class="item-video {$class} oc-external-video" data-id="external-{$v.id}">
+                            <div class="thumb-holder">
+                                <a class="video-link" href="/external_video.php?slug={$v.slug|escape:'url'}">
+                                    <img src="{$v.thumbnail_url|display_clean}" alt="{$v.title|display_clean}" class="thumb-video" loading="lazy">
+                                    <span class="title">{$v.title|display_clean}</span>
+                                </a>
+                            </div>
+                            <div class="video-info nouploader">
+                                <h2 class="title"><a href="/external_video.php?slug={$v.slug|escape:'url'}">{$v.title|display_clean}</a></h2>
+                                <div class="views-date"><span>{$v.view_count|intval} {lang code='views'}</span><span class="date">{$v.provider|display_clean}</span></div>
+                            </div>
+                        </div>
+                    {/foreach}
+                {/if}
+                {if !$videos && !$external_videos}
                     <div class="well well-info">{lang code="no_videos_found"}</div>
                 {/if}
             </div>

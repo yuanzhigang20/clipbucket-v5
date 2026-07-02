@@ -53,6 +53,29 @@ assign('type_link', 'videos' . (!empty($params['public']) ? '_public' : ''));
 $videos = Video::getInstance()->getAll($params);
 assign('videos', $videos);
 
+$external_videos = [];
+$external_total = 0;
+$external_query = trim((string)($_GET['query'] ?? $_GET['q'] ?? ''));
+$external_page = max(1, (int)($_GET['page'] ?? 1));
+$external_limit = (int)config('videos_list_per_page');
+if ($external_limit <= 0) {
+    $external_limit = 24;
+}
+$external_offset = ($external_page - 1) * $external_limit;
+$external_lib = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'custom' . DIRECTORY_SEPARATOR . 'external_videos' . DIRECTORY_SEPARATOR . 'lib' . DIRECTORY_SEPARATOR . 'external_videos_lib.php';
+if (is_readable($external_lib)) {
+    require_once $external_lib;
+    if (function_exists('ev_list')) {
+        $external_videos = ev_list(['published' => 1, 'q' => $external_query, 'limit' => $external_limit, 'offset' => $external_offset]);
+        if (function_exists('ev_count')) {
+            $external_total = ev_count(['published' => 1, 'q' => $external_query]);
+        }
+    }
+}
+assign('external_videos', $external_videos);
+assign('external_total', $external_total);
+assign('external_query', $external_query);
+
 assign('sort_list', display_sort_lang_array(Video::getInstance()->getSortList()));
 assign('sort_link', $_GET['sort'] ?? 0);
 assign('default_sort', SortType::getDefaultByType('videos'));
