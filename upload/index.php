@@ -76,6 +76,21 @@ if( config('home_display_recent_videos') == 'yes' && config('homepage_recent_vid
 }
 Assign('ids_to_check_progress_recent', json_encode($ids_to_check_progress));
 
+$external_videos = [];
+$external_total = 0;
+$external_lib = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'custom' . DIRECTORY_SEPARATOR . 'external_videos' . DIRECTORY_SEPARATOR . 'lib' . DIRECTORY_SEPARATOR . 'external_videos_lib.php';
+if (is_readable($external_lib)) {
+    require_once $external_lib;
+    if (function_exists('ev_list')) {
+        $external_videos = ev_list(['published' => 1, 'limit' => 24]);
+        if (function_exists('ev_count')) {
+            $external_total = ev_count(['published' => 1]);
+        }
+    }
+}
+assign('external_videos', $external_videos);
+assign('external_total', $external_total);
+
 $ids_to_check_progress = [];
 if (config('home_display_featured_collections') == 'yes') {
     $params = [

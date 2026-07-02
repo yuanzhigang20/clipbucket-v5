@@ -10,20 +10,25 @@
                 </div>
             {/if}
 
-            
-{literal}
-<section id="oc-home-external-videos" class="oc-home-external-videos"></section>
-<script>
-(function(){
-  var slot = document.getElementById('oc-home-external-videos');
-  if (!slot) return;
-  fetch('/external_videos_widget.php?limit=12', {credentials:'same-origin'})
-    .then(function(r){ return r.text(); })
-    .then(function(html){ slot.innerHTML = html; })
-    .catch(function(){});
-})();
-</script>
-{/literal}
+            {if !empty($external_videos)}
+                <section class="clearfix videos oc-home-collected-videos">
+                    <div class="oc-section-title-row">
+                        <h1>Latest Videos</h1>
+                        <a class="oc-view-all" href="/external_feed.php">View All</a>
+                    </div>
+                    <div class="oc-external-grid oc-home-grid">
+                        {foreach $external_videos as $v}
+                            <article class="oc-external-card">
+                                <a href="/external_video.php?slug={$v.slug|escape:'url'}">
+                                    <img src="{$v.thumbnail_url|escape:'html'}" alt="{$v.title|escape:'html'}" loading="lazy">
+                                    <h3>{$v.title|escape:'html'}</h3>
+                                    <p>{$v.view_count|number_format} views · {$v.provider|escape:'html'}</p>
+                                </a>
+                            </article>
+                        {/foreach}
+                    </div>
+                </section>
+            {/if}
 
             {if isSectionEnabled('videos') && User::getInstance()->hasPermission('view_video')}
                 {ANCHOR place='before_features_videos'}
