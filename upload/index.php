@@ -82,9 +82,9 @@ $external_lib = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'custom' . DIRECTORY_SE
 if (is_readable($external_lib)) {
     require_once $external_lib;
     if (function_exists('ev_list')) {
-        $external_videos = ev_list(['published' => 1, 'limit' => 24]);
+        $external_videos = ev_list(['published' => 1, 'imported_only' => 1, 'limit' => 24]);
         if (function_exists('ev_count')) {
-            $external_total = ev_count(['published' => 1]);
+            $external_total = ev_count(['published' => 1, 'imported_only' => 1]);
         }
     }
 }
