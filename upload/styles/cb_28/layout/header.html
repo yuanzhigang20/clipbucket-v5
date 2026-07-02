@@ -88,7 +88,7 @@
                         <div class="col btn-holder user_menu text-right">
                             {if count($types_list) > 0}
                                 <div class="search">
-                                    <form class="search-form" action="{cblink name='search_result'}">
+                                    <form class="search-form" action="/external_feed.php">
                                         <div class="cbsearchtype">
                                             <div class="search-drop">
                                                 <button id="searchTypes" tabindex="-1" data-toggle="dropdown" class="btn btn-default dropdown-toggle search-drop-btn" type="button">
@@ -104,8 +104,8 @@
                                                     {ANCHOR place="inside_search"}
                                                 </ul>
                                             </div>
-                                            <input type="text" class="form-control" name="query" placeholder="{lang code='search_keyword_feed'}" value="{'query'|get_form_val:true}" id="query"/>
-                                            <input type="hidden" name="type" class="type" value="{$toSearch}" id="type"/>
+                                            <input type="text" class="form-control" name="q" placeholder="{lang code='search_keyword_feed'}" value="{if isset($smarty.get.q)}{$smarty.get.q|display_clean}{else}{'query'|get_form_val:true}{/if}" id="query"/>
+                                            <input type="hidden" name="type" class="type" value="{$toSearch}" id="type" disabled="disabled"/>
                                             <button tabindex="-1" type="submit" name="cbsearch" id="cbsearch" class="btn btn-default btn-search icon-search"></button>
                                         </div>
                                     </form>
@@ -223,9 +223,9 @@
   <a href="/videos.php?sort=most_viewed">{lang code="oc_most_viewed"}</a>
   <a href="/videos.php?sort=featured">{lang code="oc_trending"}</a>
   <a href="/videos.php">{lang code="oc_categories"}</a>
-  <a href="/search_result.php?query=tags&type=videos">{lang code="oc_tags"}</a>
-  <a href="/search_result.php?query=long&type=videos">{lang code="oc_long_videos"}</a>
-  <a href="/search_result.php?query=hd&type=videos">{lang code="oc_hd_videos"}</a>
+  <a href="/external_feed.php?q=tags">{lang code="oc_tags"}</a>
+  <a href="/external_feed.php?q=long">{lang code="oc_long_videos"}</a>
+  <a href="/external_feed.php?q=hd">{lang code="oc_hd_videos"}</a>
   <form class="oc-lang-switcher" method="get" action="">
     <label for="oc-lang-select">{lang code="oc_language"}</label>
     <select id="oc-lang-select" name="set_site_lang" onchange="this.form.submit()">
