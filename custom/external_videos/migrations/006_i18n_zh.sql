@@ -6,7 +6,7 @@ WHERE NOT EXISTS (SELECT 1 FROM cb_languages WHERE language_code IN ('zh-CN','zh
 SET @zh_id := (SELECT language_id FROM cb_languages WHERE language_code IN ('zh-CN','zh') ORDER BY FIELD(language_code, 'zh-CN', 'zh') LIMIT 1);
 
 INSERT IGNORE INTO cb_languages_keys (language_key) VALUES
-('oc_home'),('oc_recommended'),('oc_all_videos'),('oc_latest_videos'),('oc_most_viewed'),('oc_trending'),('oc_categories'),('oc_tags'),('oc_long_videos'),('oc_hd_videos'),('oc_view_all'),('oc_hosted_videos'),('oc_videos'),('oc_search_results_for'),('oc_search_meta_description'),('oc_feed_meta_description'),('oc_videos_found'),('oc_page_of'),('oc_search_placeholder'),('oc_search_videos'),('oc_search'),('oc_clear'),('oc_views'),('oc_no_videos_found'),('oc_try_different_keyword'),('oc_video_pagination'),('oc_previous'),('oc_next'),('oc_open_video_stream'),('oc_source'),('oc_report'),('oc_dmca_complaint'),('oc_content_removal'),('oc_dmca'),('oc_language');
+('oc_home'),('oc_recommended'),('oc_all_videos'),('oc_latest_videos'),('oc_most_viewed'),('oc_trending'),('oc_categories'),('oc_tags'),('oc_long_videos'),('oc_hd_videos'),('oc_view_all'),('oc_hosted_videos'),('oc_videos'),('oc_search_results_for'),('oc_search_meta_description'),('oc_feed_meta_description'),('oc_videos_found'),('oc_page_of'),('oc_search_placeholder'),('oc_search_videos'),('oc_search'),('oc_clear'),('oc_views'),('oc_no_videos_found'),('oc_try_different_keyword'),('oc_video_pagination'),('oc_previous'),('oc_next'),('oc_open_video_stream'),('oc_source'),('oc_report'),('oc_dmca_complaint'),('oc_content_removal'),('oc_dmca'),('oc_language'),('oc_menu'),('videos'),('photos'),('channels'),('collections'),('audios'),('search_keyword_feed'),('upload'),('upload_video'),('upload_photo'),('login'),('create_new_account');
 
 INSERT INTO cb_languages_translations (id_language_key, language_id, translation)
 SELECT k.id_language_key, 1, e.translation FROM cb_languages_keys k JOIN (
@@ -44,7 +44,19 @@ SELECT 'oc_report','Report' UNION ALL
 SELECT 'oc_dmca_complaint','DMCA / Copyright Complaint' UNION ALL
 SELECT 'oc_content_removal','Content Removal' UNION ALL
 SELECT 'oc_dmca','DMCA' UNION ALL
-SELECT 'oc_language','Language'
+SELECT 'oc_language','Language' UNION ALL
+SELECT 'oc_menu','Menu' UNION ALL
+SELECT 'videos','Videos' UNION ALL
+SELECT 'photos','Photos' UNION ALL
+SELECT 'channels','Channels' UNION ALL
+SELECT 'collections','Collections' UNION ALL
+SELECT 'audios','Audios' UNION ALL
+SELECT 'search_keyword_feed','Search videos...' UNION ALL
+SELECT 'upload','Upload' UNION ALL
+SELECT 'upload_video','Upload Video' UNION ALL
+SELECT 'upload_photo','Upload Photo' UNION ALL
+SELECT 'login','Login' UNION ALL
+SELECT 'create_new_account','Sign Up'
 ) e ON e.k = k.language_key
 ON DUPLICATE KEY UPDATE translation=VALUES(translation);
 
@@ -84,7 +96,19 @@ SELECT 'oc_report','举报' UNION ALL
 SELECT 'oc_dmca_complaint','DMCA / 版权投诉' UNION ALL
 SELECT 'oc_content_removal','内容移除' UNION ALL
 SELECT 'oc_dmca','DMCA' UNION ALL
-SELECT 'oc_language','语言'
+SELECT 'oc_language','语言' UNION ALL
+SELECT 'oc_menu','菜单' UNION ALL
+SELECT 'videos','视频' UNION ALL
+SELECT 'photos','图片' UNION ALL
+SELECT 'channels','频道' UNION ALL
+SELECT 'collections','合集' UNION ALL
+SELECT 'audios','音频' UNION ALL
+SELECT 'search_keyword_feed','搜索视频...' UNION ALL
+SELECT 'upload','上传' UNION ALL
+SELECT 'upload_video','上传视频' UNION ALL
+SELECT 'upload_photo','上传图片' UNION ALL
+SELECT 'login','登录' UNION ALL
+SELECT 'create_new_account','注册'
 ) z ON z.k = k.language_key
 WHERE @zh_id IS NOT NULL
 ON DUPLICATE KEY UPDATE translation=VALUES(translation);

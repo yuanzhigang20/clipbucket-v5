@@ -40,7 +40,7 @@
             <div class="header-holder">
                 <div class="navbar-header clearfix">
 
-                    <button class="navbar-toggle" data-toggle="collapse" data-target="#bs-collapse">Menu<span class="icon-down-arrow"></span></button>
+                    <button class="navbar-toggle" data-toggle="collapse" data-target="#bs-collapse">{lang code="oc_menu"}<span class="icon-down-arrow"></span></button>
 
                     {ANCHOR place="before_logo"}
                     <h1 class="logo no_select">
@@ -69,7 +69,7 @@
                                                 {continue}
                                             {/if}
                                             {if User::getInstance()->hasPermission($menu.permission)}
-                                                <li {if $menu.name|lower == $currentPage || $menu.name|lower == $pageType}class="active"{/if}><a href="{$menu.link}">{$menu.name}</a></li>
+                                                <li {if $menu.name|lower == $currentPage || $menu.name|lower == $pageType}class="active"{/if}><a href="{$menu.link}">{if in_array($menu.name|lower, array('videos','photos','channels','collections','audios'))}{lang code=$menu.name|lower}{else}{$menu.name}{/if}</a></li>
                                             {/if}
                                         {/if}
                                     {/foreach}
@@ -234,4 +234,5 @@
     </select>
   </form>
 </nav>
+<script src="/oc_i18n_ui.js?v=1"></script>
 
