@@ -10,7 +10,7 @@ $total = ev_count(['published' => 1, 'q' => $q]);
 $totalPages = max(1, (int)ceil($total / $perPage));
 if ($page > $totalPages) { $page = $totalPages; }
 $offset = ($page - 1) * $perPage;
-$items = ev_list(['published' => 1, 'imported_only' => 1, 'q' => $q, 'limit' => $perPage, 'offset' => $offset]);
+$items = ev_list(['published' => 1, 'q' => $q, 'limit' => $perPage, 'offset' => $offset]);
 $baseParams = $q !== '' ? ['q' => $q] : [];
 
 function ev_lang_switcher(): string {
