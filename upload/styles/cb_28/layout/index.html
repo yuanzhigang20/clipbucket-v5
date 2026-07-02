@@ -13,8 +13,8 @@
             {if !empty($external_videos)}
                 <section class="clearfix videos oc-home-collected-videos">
                     <div class="oc-section-title-row">
-                        <h1>Latest Videos</h1>
-                        <a class="oc-view-all" href="/external_feed.php">View All</a>
+                        <h1>{lang code="oc_latest_videos"}</h1>
+                        <a class="oc-view-all" href="/external_feed.php">{lang code="oc_view_all"}</a>
                     </div>
                     <div class="oc-external-grid oc-home-grid">
                         {foreach $external_videos as $v}
@@ -22,7 +22,7 @@
                                 <a href="/external_video.php?slug={$v.slug|escape:'url'}">
                                     <img src="{$v.thumbnail_url|escape:'html'}" alt="{$v.title|escape:'html'}" loading="lazy">
                                     <h3>{$v.title|escape:'html'}</h3>
-                                    <p>{$v.view_count|number_format} views · {$v.provider|escape:'html'}</p>
+                                    <p>{$v.view_count|number_format} {lang code="oc_views"} · {$v.provider|escape:'html'}</p>
                                 </a>
                             </article>
                         {/foreach}

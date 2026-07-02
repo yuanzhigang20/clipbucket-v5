@@ -54,25 +54,23 @@ class Language
      */
     public function init(): void
     {
-        if( Session::isCookieConsent('cb_lang') ){
+        if( isset($_GET['set_site_lang']) ){
+            $lang = $_GET['set_site_lang'];
+            if ($this->getLangById($lang)) {
+                Session::setCookie('cb_lang', $lang);
+            }
+        } elseif( Session::isCookieConsent('cb_lang') ){
             $lang = getArrayValue($_COOKIE, 'cb_lang');
-
-            if( isset($_GET['set_site_lang']) ){
-                $lang = $_GET['set_site_lang'];
-                if ($this->getLangById($lang)) {
-                    Session::setCookie('cb_lang', $lang);
-                }
-            }
-
-            if (!empty($lang)) {
-                $lang_details = $this->getLangById($lang);
-            }
         }
 
-        if (isset($lang) && isset($lang_details)) {
+        if (!empty($lang)) {
+            $lang_details = $this->getLangById($lang);
+        }
+
+        if (isset($lang_details) && !empty($lang_details)) {
             $default = $lang_details;
         } else {
-            $default = self::getDefaultLanguage();
+            $default = self::getPreferredLanguageFromRequest() ?: self::getDefaultLanguage();
         }
 
         if ($default['language_id']) {
@@ -82,6 +80,50 @@ class Language
         }
 
         $this->loadTranslations($this->lang_id);
+    }
+
+    public static function getPreferredLanguageFromRequest()
+    {
+        $accept = $_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? '';
+        if (empty($accept)) {
+            return false;
+        }
+
+        $available = self::getActiveLanguagesByCode();
+        if (empty($available)) {
+            return false;
+        }
+
+        foreach (explode(',', $accept) as $part) {
+            $code = strtolower(trim(explode(';', $part)[0]));
+            if ($code === '') {
+                continue;
+            }
+            if (isset($available[$code])) {
+                return $available[$code];
+            }
+            $base = explode('-', $code)[0];
+            if (isset($available[$base])) {
+                return $available[$base];
+            }
+        }
+
+        return false;
+    }
+
+    public static function getActiveLanguagesByCode(): array
+    {
+        $rows = Clipbucket_db::getInstance()->select(tbl('languages'), '*', 'language_active=\'yes\'', false, false, false, 3600, 'active_languages_by_code');
+        $languages = [];
+        foreach ($rows as $row) {
+            $full = strtolower($row['language_code']);
+            $base = explode('-', $full)[0];
+            $languages[$full] = $row;
+            if (!isset($languages[$base])) {
+                $languages[$base] = $row;
+            }
+        }
+        return $languages;
     }
 
     /**
