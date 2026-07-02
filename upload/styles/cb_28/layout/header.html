@@ -226,5 +226,12 @@
   <a href="/search_result.php?query=tags&type=videos">{lang code="oc_tags"}</a>
   <a href="/search_result.php?query=long&type=videos">{lang code="oc_long_videos"}</a>
   <a href="/search_result.php?query=hd&type=videos">{lang code="oc_hd_videos"}</a>
+  <form class="oc-lang-switcher" method="get" action="">
+    <label for="oc-lang-select">{lang code="oc_language"}</label>
+    <select id="oc-lang-select" name="set_site_lang" onchange="this.form.submit()">
+      <option value="1" {if Language::getInstance()->getLangISO() == 'en'}selected{/if}>English</option>
+      <option value="zh-CN" {if Language::getInstance()->getLangISO() == 'zh-CN' || Language::getInstance()->getLangISO() == 'zh'}selected{/if}>中文</option>
+    </select>
+  </form>
 </nav>
 

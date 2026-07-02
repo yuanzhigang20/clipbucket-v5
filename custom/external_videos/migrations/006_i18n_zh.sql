@@ -6,7 +6,7 @@ WHERE NOT EXISTS (SELECT 1 FROM cb_languages WHERE language_code IN ('zh-CN','zh
 SET @zh_id := (SELECT language_id FROM cb_languages WHERE language_code IN ('zh-CN','zh') ORDER BY FIELD(language_code, 'zh-CN', 'zh') LIMIT 1);
 
 INSERT IGNORE INTO cb_languages_keys (language_key) VALUES
-('oc_home'),('oc_recommended'),('oc_all_videos'),('oc_latest_videos'),('oc_most_viewed'),('oc_trending'),('oc_categories'),('oc_tags'),('oc_long_videos'),('oc_hd_videos'),('oc_view_all'),('oc_hosted_videos'),('oc_videos'),('oc_search_results_for'),('oc_search_meta_description'),('oc_feed_meta_description'),('oc_videos_found'),('oc_page_of'),('oc_search_placeholder'),('oc_search_videos'),('oc_search'),('oc_clear'),('oc_views'),('oc_no_videos_found'),('oc_try_different_keyword'),('oc_video_pagination'),('oc_previous'),('oc_next'),('oc_open_video_stream'),('oc_source'),('oc_report'),('oc_dmca_complaint'),('oc_content_removal'),('oc_dmca');
+('oc_home'),('oc_recommended'),('oc_all_videos'),('oc_latest_videos'),('oc_most_viewed'),('oc_trending'),('oc_categories'),('oc_tags'),('oc_long_videos'),('oc_hd_videos'),('oc_view_all'),('oc_hosted_videos'),('oc_videos'),('oc_search_results_for'),('oc_search_meta_description'),('oc_feed_meta_description'),('oc_videos_found'),('oc_page_of'),('oc_search_placeholder'),('oc_search_videos'),('oc_search'),('oc_clear'),('oc_views'),('oc_no_videos_found'),('oc_try_different_keyword'),('oc_video_pagination'),('oc_previous'),('oc_next'),('oc_open_video_stream'),('oc_source'),('oc_report'),('oc_dmca_complaint'),('oc_content_removal'),('oc_dmca'),('oc_language');
 
 INSERT INTO cb_languages_translations (id_language_key, language_id, translation)
 SELECT k.id_language_key, 1, e.translation FROM cb_languages_keys k JOIN (
@@ -43,7 +43,8 @@ SELECT 'oc_source','Source' UNION ALL
 SELECT 'oc_report','Report' UNION ALL
 SELECT 'oc_dmca_complaint','DMCA / Copyright Complaint' UNION ALL
 SELECT 'oc_content_removal','Content Removal' UNION ALL
-SELECT 'oc_dmca','DMCA'
+SELECT 'oc_dmca','DMCA' UNION ALL
+SELECT 'oc_language','Language'
 ) e ON e.k = k.language_key
 ON DUPLICATE KEY UPDATE translation=VALUES(translation);
 
@@ -82,7 +83,8 @@ SELECT 'oc_source','来源' UNION ALL
 SELECT 'oc_report','举报' UNION ALL
 SELECT 'oc_dmca_complaint','DMCA / 版权投诉' UNION ALL
 SELECT 'oc_content_removal','内容移除' UNION ALL
-SELECT 'oc_dmca','DMCA'
+SELECT 'oc_dmca','DMCA' UNION ALL
+SELECT 'oc_language','语言'
 ) z ON z.k = k.language_key
 WHERE @zh_id IS NOT NULL
 ON DUPLICATE KEY UPDATE translation=VALUES(translation);

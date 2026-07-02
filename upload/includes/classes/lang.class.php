@@ -326,7 +326,12 @@ class Language
     public static function getLangById($id)
     {
         $id = mysql_clean($id);
-        $results = Clipbucket_db::getInstance()->select(tbl('languages'), '*', 'language_id = ' . (int)$id, false, false, false, 3600);
+        if (is_numeric($id)) {
+            $cond = 'language_id = ' . (int)$id;
+        } else {
+            $cond = "language_code = '" . $id . "'";
+        }
+        $results = Clipbucket_db::getInstance()->select(tbl('languages'), '*', $cond, false, false, false, 3600);
 
         if (!empty($results)) {
             return $results[0];
